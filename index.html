@@ -39,7 +39,7 @@ button.active { background: var(--accent); color: #07110d; border-color: var(--a
 .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 18px; box-shadow: 0 15px 45px #0004; margin-bottom: 16px; }
 .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
 .toolbar h2 { font-size: 18px; margin: 0; }
-table { width: 100%; border-collapse: collapse; min-width: 1000px; }
+table { width: 100%; border-collapse: collapse; min-width: 900px; }
 th, td { border-bottom: 1px solid var(--border); padding: 9px 7px; text-align: left; font-size: 13px; }
 th { color: var(--muted); font-weight: 600; }
 tr:last-child td { border-bottom: 0; }
@@ -130,14 +130,14 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
         <h2>Quote calculator</h2>
         <div class="order-actions">
           <label class="small">Base Currency:
-            <select id="baseCurrency" style="width:75px;display:inline-block;margin-left:5px">
+            <select id="baseCurrency" style="width:75px;display:inline-block;margin-left:5px" onchange="render()">
               <option value="USD">USD</option>
               <option value="EUR">EUR</option>
               <option value="PLN">PLN</option>
             </select>
           </label>
           <label class="small">Get paid in:
-            <select id="paymentCurrency" style="width:100px;display:inline-block;margin-left:5px">
+            <select id="paymentCurrency" style="width:100px;display:inline-block;margin-left:5px" onchange="render()">
               <option value="USD">USD ($)</option>
               <option value="EUR">EUR (€)</option>
               <option value="PLN">PLN (zł)</option>
@@ -158,7 +158,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
         <table>
           <thead><tr>
             <th>Amount</th><th>Tier</th><th>Price / Unit</th><th>Additional Information</th><th>Delivery</th>
-            <th>USD</th><th>EUR</th><th>PLN / USD</th><th>PLN / EUR</th><th></th>
+            <th id="thCol1">CAD</th><th id="thCol2">USD</th><th id="thCol3">EUR</th><th></th>
           </tr></thead>
           <tbody id="calcBody"></tbody>
         </table>
@@ -167,10 +167,10 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
       <!-- Additional Fees Section -->
       <div class="toolbar" style="margin-top: 24px;">
         <h2>Additional Fees</h2>
-        <div style="display:flex; gap:10px;">
-          <input id="feeName" placeholder="Fee Name (e.g. Rush Order)" style="max-width:250px">
-          <input id="feeAmount" type="number" step="0.01" placeholder="Amount" style="max-width:120px">
-          <button id="addFeeBtn" style="background:var(--accent); color:#07110d; border-color:var(--accent);">+ Add Fee</button>
+        <div style="display:flex; gap:10px; align-items: center; width: 100%; max-width: 550px; justify-content: flex-end;">
+          <input id="feeName" placeholder="Fee Name (e.g. Rush Order)" style="flex: 2;">
+          <input id="feePercent" type="number" step="0.1" placeholder="Fee % (e.g. 15)" style="flex: 1;">
+          <button id="addFeeBtn" style="background:var(--accent); color:#07110d; border-color:var(--accent); white-space: nowrap;">+ Add Fee %</button>
         </div>
       </div>
       <div class="table-wrap" style="margin-bottom: 24px;">
@@ -178,7 +178,8 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
           <thead>
             <tr>
               <th style="width: 50%;">Fee Description</th>
-              <th>Amount</th>
+              <th>Percentage</th>
+              <th>Calculated Value</th>
               <th></th>
             </tr>
           </thead>
@@ -186,17 +187,17 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
         </table>
       </div>
 
-      <div class="cards" style="grid-template-columns: repeat(5, 1fr);">
-        <div class="card"><div class="label">USD total</div><div class="value" id="usdTotal">$0.00</div></div>
-        <div class="card"><div class="label">EUR total</div><div class="value" id="eurTotal">€0.00</div></div>
-        <div class="card"><div class="label">PLN from USD</div><div class="value" id="plnUsd">0.00 zł</div></div>
-        <div class="card"><div class="label">PLN from EUR</div><div class="value" id="plnEur">0.00 zł</div></div>
+      <div class="cards" style="grid-template-columns: repeat(5, 1fr);" id="topCardsGrid">
+        <div class="card" id="cardWrap1"><div class="label" id="cardLbl1">CAD total</div><div class="value" id="usdTotal">$0.00</div></div>
+        <div class="card" id="cardWrap2"><div class="label" id="cardLbl2">USD total</div><div class="value" id="eurTotal">$0.00</div></div>
+        <div class="card" id="cardWrap3"><div class="label" id="cardLbl3">EUR total</div><div class="value" id="plnUsd">€0.00</div></div>
+        <div class="card" id="cardWrap4"><div class="label" id="cardLbl4">PLN total</div><div class="value" id="plnEur">zł0.00</div></div>
         <div class="card" style="border-color: var(--accent);"><div class="label">Fees Total</div><div class="value" id="feesTotalVal">0.00</div></div>
       </div>
       <div class="cards">
-        <div class="card"><div class="label">10% discount — USD</div><div class="value" id="discUsd">$0.00</div></div>
-        <div class="card"><div class="label">10% discount — EUR</div><div class="value" id="discEur">€0.00</div></div>
-        <div class="card"><div class="label">PayPal estimate (5% USD)</div><div class="value" id="paypal">$0.00</div></div>
+        <div class="card"><div class="label">10% discount — Primary</div><div class="value" id="discUsd">$0.00</div></div>
+        <div class="card"><div class="label">10% discount — Secondary</div><div class="value" id="discEur">$0.00</div></div>
+        <div class="card"><div class="label">PayPal estimate (5% off)</div><div class="value" id="paypal">$0.00</div></div>
         <div class="card" id="paymentCard"><div class="label">Payment requirement</div><div class="value" id="payment" style="font-size:17px">—</div></div>
       </div>
       <div id="quoteNotice" class="notice hidden"></div>
@@ -894,14 +895,21 @@ function calcRow(r){
   return a*p*mult;
 }
 
+function getRowTotalBase() {
+  return rows.reduce((s,r) => s + calcRow(r), 0);
+}
+
 function renderFees() {
   const b = document.getElementById("feesBody");
   b.innerHTML = "";
+  const rowTotal = getRowTotalBase();
   fees.forEach((f, i) => {
+    const calcVal = rowTotal * (f.percent / 100);
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${f.name}</td>
-      <td>${money(f.amount, '')} ${baseCurrency}</td>
+      <td>${f.percent}%</td>
+      <td>${money(calcVal, '')} ${baseCurrency}</td>
       <td style="text-align: right;"><button class="remove" onclick="removeFee(${i})">×</button></td>`;
     b.appendChild(tr);
   });
@@ -916,33 +924,75 @@ function removeFee(i) {
 
 document.getElementById("addFeeBtn").onclick = () => {
   const name = document.getElementById("feeName").value.trim();
-  const amt = Number(document.getElementById("feeAmount").value);
-  if (name && amt > 0) {
-    fees.push({ name, amount: amt });
+  const pct = Number(document.getElementById("feePercent").value);
+  if (name && !isNaN(pct)) {
+    fees.push({ name, percent: pct });
     localStorage.setItem("liveryFees", JSON.stringify(fees));
     document.getElementById("feeName").value = '';
-    document.getElementById("feeAmount").value = '';
+    document.getElementById("feePercent").value = '';
     renderFees();
   }
 };
 
 function render(){
+  baseCurrency = document.getElementById("baseCurrency").value;
+  const paymentCurr = document.getElementById("paymentCurrency").value;
+  
+  const isRedundant = (baseCurrency === paymentCurr);
+  
+  const thCol1 = document.getElementById("thCol1");
+  const thCol2 = document.getElementById("thCol2");
+  const thCol3 = document.getElementById("thCol3");
+  const cardWrap1 = document.getElementById("cardWrap1");
+  const cardWrap2 = document.getElementById("cardWrap2");
+  const cardWrap3 = document.getElementById("cardWrap3");
+  const cardWrap4 = document.getElementById("cardWrap4");
+  const topCardsGrid = document.getElementById("topCardsGrid");
+
+  if (isRedundant) {
+    if (thCol1) thCol1.style.display = "none";
+    if (thCol2) thCol2.style.display = "none";
+    if (thCol3) thCol3.style.display = "none";
+    if (cardWrap1) cardWrap1.style.display = "none";
+    if (cardWrap2) cardWrap2.style.display = "none";
+    if (cardWrap3) cardWrap3.style.display = "none";
+    if (topCardsGrid) topCardsGrid.style.gridTemplateColumns = "repeat(2, 1fr)";
+  } else {
+    if (thCol1) thCol1.style.display = "";
+    if (thCol2) thCol2.style.display = "";
+    if (thCol3) thCol3.style.display = "";
+    if (cardWrap1) cardWrap1.style.display = "";
+    if (cardWrap2) cardWrap2.style.display = "";
+    if (cardWrap3) cardWrap3.style.display = "";
+    if (topCardsGrid) topCardsGrid.style.gridTemplateColumns = "repeat(5, 1fr)";
+  }
+
+  let col2Curr = paymentCurr === 'USD' ? 'EUR' : 'USD';
+  let col3Curr = paymentCurr === 'EUR' ? 'USD' : (paymentCurr === 'USD' ? 'GBP' : 'EUR');
+  if (col2Curr === col3Curr) {
+    col3Curr = col3Curr === 'USD' ? 'GBP' : 'USD';
+  }
+
+  if (thCol1) thCol1.textContent = paymentCurr;
+  if (thCol2) thCol2.textContent = col2Curr;
+  if (thCol3) thCol3.textContent = col3Curr;
+
+  if (document.getElementById("cardLbl1")) document.getElementById("cardLbl1").textContent = `${paymentCurr} total`;
+  if (document.getElementById("cardLbl2")) document.getElementById("cardLbl2").textContent = `${col2Curr} total`;
+  if (document.getElementById("cardLbl3")) document.getElementById("cardLbl3").textContent = `${col3Curr} total`;
+
   const body=document.getElementById("calcBody"); body.innerHTML="";
   rows.forEach((r,i)=>{
     const v = calcRow(r); 
     
-    let inUSD, inEUR, inPLN_USD, inPLN_EUR;
-    if (baseCurrency === 'PLN') {
-        inUSD = v / rates.USDPLN;
-        inEUR = v / rates.EURPLN;
-        inPLN_USD = v;
-        inPLN_EUR = v;
-    } else {
-        inUSD = v;
-        inEUR = v;
-        inPLN_USD = v * rates.USDPLN;
-        inPLN_EUR = v * rates.EURPLN;
-    }
+    let inBase = v;
+    let valCol1 = convertCurrency(inBase, baseCurrency, paymentCurr);
+    let valCol2 = convertCurrency(inBase, baseCurrency, col2Curr);
+    let valCol3 = convertCurrency(inBase, baseCurrency, col3Curr);
+
+    let sym1 = paymentCurr === 'EUR' ? '€' : paymentCurr === 'PLN' ? 'zł' : paymentCurr === 'GBP' ? '£' : paymentCurr === 'CAD' ? '$' : paymentCurr === 'AUD' ? '$' : paymentCurr === 'JPY' ? '¥' : paymentCurr === 'CHF' ? 'Fr' : '$';
+    let sym2 = col2Curr === 'EUR' ? '€' : col2Curr === 'PLN' ? 'zł' : col2Curr === 'GBP' ? '£' : col2Curr === 'CAD' ? '$' : col2Curr === 'AUD' ? '$' : col2Curr === 'JPY' ? '¥' : col2Curr === 'CHF' ? 'Fr' : '$';
+    let sym3 = col3Curr === 'EUR' ? '€' : col3Curr === 'PLN' ? 'zł' : col3Curr === 'GBP' ? '£' : col3Curr === 'CAD' ? '$' : col3Curr === 'AUD' ? '$' : col3Curr === 'JPY' ? '¥' : col3Curr === 'CHF' ? 'Fr' : '$';
 
     const tr=document.createElement("tr");
     tr.innerHTML=`
@@ -951,79 +1001,108 @@ function render(){
       <td><input class="price" type="number" min="0" step="0.01" data-i="${i}" data-k="price" value="${r.price}"></td>
       <td><input data-i="${i}" data-k="info" value="${r.info||""}"></td>
       <td><select data-i="${i}" data-k="delivery"><option ${r.delivery==="NORM"?"selected":""}>NORM</option><option ${r.delivery==="MID"?"selected":""}>MID</option><option ${r.delivery==="ASAP"?"selected":""}>ASAP</option><option ${r.delivery==="Wait"?"selected":""}>Wait</option></select></td>
-      <td>${money(inUSD,"$")}</td><td>${money(inEUR,"€")}</td><td>${money(inPLN_USD,"")}</td><td>${money(inPLN_EUR,"")}</td>
+      <td style="display:${isRedundant?'none':''}">${money(valCol1, sym1)}</td><td style="display:${isRedundant?'none':''}">${money(valCol2, sym2)}</td><td style="display:${isRedundant?'none':''}">${money(valCol3, sym3)}</td>
       <td><button class="remove" onclick="removeRow(${i})">×</button></td>`;
     body.appendChild(tr);
   });
   body.querySelectorAll("input,select").forEach(el=>el.addEventListener("input",e=>{
     const i=+e.target.dataset.i,k=e.target.dataset.k; rows[i][k]=e.target.value;
     localStorage.setItem("liveryCalcRows",JSON.stringify(rows)); 
-    updateTotals();
+    renderFees();
     calculateWorkScheduleTracker();
   }));
   updateTotals();
   calculateWorkScheduleTracker();
 }
 
+function convertCurrency(amount, fromCurr, toCurr) {
+  if (fromCurr === toCurr) return amount;
+  
+  let inUSD = amount;
+  if (fromCurr === 'PLN') inUSD = amount / rates.USDPLN;
+  else if (fromCurr === 'EUR') inUSD = amount / (rates.EURPLN ? (rates.USDPLN / rates.EURPLN) : 0.92);
+  else if (fromCurr === 'GBP') inUSD = amount / rates.USDGBP;
+  else if (fromCurr === 'CAD') inUSD = amount / rates.USDCAD;
+  else if (fromCurr === 'AUD') inUSD = amount / rates.USDAUD;
+  else if (fromCurr === 'JPY') inUSD = amount / rates.USDJPY;
+  else if (fromCurr === 'CHF') inUSD = amount / rates.USDCHF;
+
+  if (toCurr === 'USD') return inUSD;
+  if (toCurr === 'PLN') return inUSD * rates.USDPLN;
+  if (toCurr === 'EUR') return inUSD * (rates.EURPLN ? (rates.USDPLN / rates.EURPLN) : 1.08);
+  if (toCurr === 'GBP') return inUSD * rates.USDGBP;
+  if (toCurr === 'CAD') return inUSD * rates.USDCAD;
+  if (toCurr === 'AUD') return inUSD * rates.USDAUD;
+  if (toCurr === 'JPY') return inUSD * rates.USDJPY;
+  if (toCurr === 'CHF') return inUSD * rates.USDCHF;
+
+  return amount;
+}
+
 function updateTotals(){
-  const rowTotal = rows.reduce((s,r) => s + calcRow(r), 0);
-  const feesTotal = fees.reduce((s,f) => s + f.amount, 0);
+  const rowTotal = getRowTotalBase();
+  const feePercentTotal = fees.reduce((s,f) => s + (f.percent || 0), 0);
+  const feesTotal = rowTotal * (feePercentTotal / 100);
   const totalBase = rowTotal + feesTotal;
 
-  let totalUSD, totalEUR, totalPLN_USD, totalPLN_EUR;
-  if (baseCurrency === 'PLN') {
-    totalUSD = totalBase / rates.USDPLN;
-    totalEUR = totalBase / rates.EURPLN;
-    totalPLN_USD = totalBase;
-    totalPLN_EUR = totalBase;
-  } else {
-    totalUSD = totalBase;
-    totalEUR = totalBase;
-    totalPLN_USD = totalBase * rates.USDPLN;
-    totalPLN_EUR = totalBase * rates.EURPLN;
+  const paymentCurr = document.getElementById("paymentCurrency").value;
+  let col2Curr = paymentCurr === 'USD' ? 'EUR' : 'USD';
+  let col3Curr = paymentCurr === 'EUR' ? 'USD' : (paymentCurr === 'USD' ? 'GBP' : 'EUR');
+  if (col2Curr === col3Curr) {
+    col3Curr = col3Curr === 'USD' ? 'GBP' : 'USD';
   }
-  
-  const discUSD = totalUSD * 0.9;
-  const discEUR = totalEUR * 0.9;
 
-  document.getElementById("usdTotal").textContent = money(totalUSD,"$");
-  document.getElementById("eurTotal").textContent = money(totalEUR,"€");
-  document.getElementById("plnUsd").textContent = money(totalPLN_USD,"") + " zł";
-  document.getElementById("plnEur").textContent = money(totalPLN_EUR,"") + " zł";
-  document.getElementById("feesTotalVal").textContent = money(feesTotal,"") + ` ${baseCurrency}`;
+  let sym1 = paymentCurr === 'EUR' ? '€' : paymentCurr === 'PLN' ? 'zł' : paymentCurr === 'GBP' ? '£' : paymentCurr === 'CAD' ? '$' : paymentCurr === 'AUD' ? '$' : paymentCurr === 'JPY' ? '¥' : paymentCurr === 'CHF' ? 'Fr' : '$';
+  let sym2 = col2Curr === 'EUR' ? '€' : col2Curr === 'PLN' ? 'zł' : col2Curr === 'GBP' ? '£' : col2Curr === 'CAD' ? '$' : col2Curr === 'AUD' ? '$' : col2Curr === 'JPY' ? '¥' : col2Curr === 'CHF' ? 'Fr' : '$';
+  let sym3 = col3Curr === 'EUR' ? '€' : col3Curr === 'PLN' ? 'zł' : col3Curr === 'GBP' ? '£' : col3Curr === 'CAD' ? '$' : col3Curr === 'AUD' ? '$' : col3Curr === 'JPY' ? '¥' : col3Curr === 'CHF' ? 'Fr' : '$';
 
-  document.getElementById("discUsd").textContent = money(discUSD,"$");
-  document.getElementById("discEur").textContent = money(discEUR,"€");
-  document.getElementById("paypal").textContent = money(totalUSD * 0.95,"$");
+  const totalCol1 = convertCurrency(totalBase, baseCurrency, paymentCurr);
+  const totalCol2 = convertCurrency(totalBase, baseCurrency, col2Curr);
+  const totalCol3 = convertCurrency(totalBase, baseCurrency, col3Curr);
+  const totalPLN = convertCurrency(totalBase, baseCurrency, 'PLN');
   
+  const discCol1 = totalCol1 * 0.9;
+  const discCol2 = totalCol2 * 0.9;
+
+  if (document.getElementById("usdTotal")) document.getElementById("usdTotal").textContent = money(totalCol1, sym1);
+  if (document.getElementById("eurTotal")) document.getElementById("eurTotal").textContent = money(totalCol2, sym2);
+  if (document.getElementById("plnUsd")) document.getElementById("plnUsd").textContent = money(totalCol3, sym3);
+  if (document.getElementById("plnEur")) document.getElementById("plnEur").textContent = money(totalPLN, "zł");
+  if (document.getElementById("feesTotalVal")) document.getElementById("feesTotalVal").textContent = feePercentTotal + `% (${money(feesTotal, '')} ${baseCurrency})`;
+
+  if (document.getElementById("discUsd")) document.getElementById("discUsd").textContent = money(discCol1, sym1);
+  if (document.getElementById("discEur")) document.getElementById("discEur").textContent = money(discCol2, sym2);
+  if (document.getElementById("paypal")) document.getElementById("paypal").textContent = money(totalCol1 * 0.95, sym1);
+  
+  const totalUSD = convertCurrency(totalBase, baseCurrency, 'USD');
   const paymentCard = document.getElementById("paymentCard");
   const paymentText = document.getElementById("payment");
   
-  paymentCard.classList.remove("breathe-yellow-border", "breathe-red-border", "shine-yellow-bg", "shine-red-bg");
+  if (paymentCard) paymentCard.classList.remove("breathe-yellow-border", "breathe-red-border", "shine-yellow-bg", "shine-red-bg");
   
   if (totalUSD >= upfrontThreshold) {
-    paymentText.textContent = "PAY UP FRONT";
-    if (paymentAlertStyle === 'shine') {
-      paymentCard.classList.add("shine-red-bg");
-    } else {
-      paymentCard.classList.add("breathe-red-border");
+    if (paymentText) paymentText.textContent = "PAY UP FRONT";
+    if (paymentCard) {
+      if (paymentAlertStyle === 'shine') paymentCard.classList.add("shine-red-bg");
+      else paymentCard.classList.add("breathe-red-border");
     }
   } else if (totalUSD >= halfThreshold) {
-    paymentText.textContent = "PAY HALF NOW";
-    if (paymentAlertStyle === 'shine') {
-      paymentCard.classList.add("shine-yellow-bg");
-    } else {
-      paymentCard.classList.add("breathe-yellow-border");
+    if (paymentText) paymentText.textContent = "PAY HALF NOW";
+    if (paymentCard) {
+      if (paymentAlertStyle === 'shine') paymentCard.classList.add("shine-yellow-bg");
+      else paymentCard.classList.add("breathe-yellow-border");
     }
   } else {
-    paymentText.textContent = "—";
+    if (paymentText) paymentText.textContent = "—";
   }
   
   const notice = document.getElementById("quoteNotice");
-  if(totalUSD > 0){
-    notice.classList.remove("hidden");
-    notice.textContent = totalUSD >= upfrontThreshold ? `This quote is above $${upfrontThreshold}: payment is required up front.` : totalUSD >= halfThreshold ? `This quote is $${halfThreshold} or more: half is due up front.` : "";
-  } else notice.classList.add("hidden");
+  if (notice) {
+    if(totalBase > 0){
+      notice.classList.remove("hidden");
+      notice.textContent = totalUSD >= upfrontThreshold ? `This quote is above USD $${upfrontThreshold}: payment is required up front.` : totalUSD >= halfThreshold ? `This quote is USD $${halfThreshold} or more: half is due up front.` : "";
+    } else notice.classList.add("hidden");
+  }
 }
 
 function removeRow(i){rows.splice(i,1);localStorage.setItem("liveryCalcRows",JSON.stringify(rows));render()}
@@ -1185,35 +1264,13 @@ document.getElementById("addOrder").onclick=()=>{
 };
 
 function getQuoteTotals(){
- const rowTotal = rows.reduce((s,r) => s + calcRow(r), 0);
- const feesTotal = fees.reduce((s,f) => s + f.amount, 0);
+ const rowTotal = getRowTotalBase();
+ const feePercentTotal = fees.reduce((s,f) => s + (f.percent || 0), 0);
+ const feesTotal = rowTotal * (feePercentTotal / 100);
  const totalBase = rowTotal + feesTotal;
  const currency = document.getElementById("paymentCurrency").value;
  
- let amount = totalBase; 
- if (baseCurrency === 'PLN') {
-    if (currency !== 'PLN') {
-      let targetRate = currency === 'EUR' ? rates.EURPLN : currency === 'GBP' ? (rates.USDPLN/rates.USDGBP) : rates.USDPLN;
-      amount = totalBase / targetRate;
-    }
- } else {
-    if (currency === 'PLN') {
-       amount = totalBase * rates.USDPLN;
-    } else if (currency === 'EUR') {
-       amount = totalBase; 
-    } else if (currency === 'GBP') {
-       amount = totalBase * rates.USDGBP;
-    } else if (currency === 'CAD') {
-       amount = totalBase * rates.USDCAD;
-    } else if (currency === 'AUD') {
-       amount = totalBase * rates.USDAUD;
-    } else if (currency === 'JPY') {
-       amount = totalBase * rates.USDJPY;
-    } else if (currency === 'CHF') {
-       amount = totalBase * rates.USDCHF;
-    }
- }
-
+ const amount = convertCurrency(totalBase, baseCurrency, currency);
  return { total: totalBase, currency, amount };
 }
 
@@ -1266,24 +1323,25 @@ function renderBlacklist(){
 }
 document.getElementById("addBlacklist").onclick=()=>{blacklist.push({name:"",discord:"",date:"",reason:"",cost:0});renderBlacklist()};
 
-// --- API Loading ---
+// --- API Loading (Frankfurter Google Rates) ---
 async function loadRates(){
  try{
    const res=await fetch("https://api.frankfurter.app/latest?from=USD&to=PLN,EUR,GBP,CAD,AUD,JPY,CHF");
    const d=await res.json();
-   rates.USDPLN = d.rates.PLN; 
-   rates.EURPLN = d.rates.PLN / d.rates.EUR;
-   if(d.rates.GBP) rates.USDGBP = d.rates.GBP;
-   if(d.rates.CAD) rates.USDCAD = d.rates.CAD;
-   if(d.rates.USDAUD) rates.USDAUD = d.rates.USDAUD;
-   if(d.rates.JPY) rates.USDJPY = d.rates.JPY;
-   if(d.rates.CHF) rates.USDCHF = d.rates.CHF;
-
-   document.getElementById("rateStatus").textContent=`Live rates updated successfully`;
+   if(d.rates){
+     if(d.rates.PLN) rates.USDPLN = d.rates.PLN;
+     if(d.rates.EUR) rates.EURPLN = d.rates.PLN / d.rates.EUR;
+     if(d.rates.GBP) rates.USDGBP = d.rates.GBP;
+     if(d.rates.CAD) rates.USDCAD = d.rates.CAD;
+     if(d.rates.AUD) rates.USDAUD = d.rates.AUD;
+     if(d.rates.JPY) rates.USDJPY = d.rates.JPY;
+     if(d.rates.CHF) rates.USDCHF = d.rates.CHF;
+   }
+   document.getElementById("rateStatus").textContent=`Live Google exchange rates updated successfully`;
    render();
    renderFees();
  }catch(e){
-   document.getElementById("rateStatus").textContent="Using spreadsheet fallback exchange rates";
+   document.getElementById("rateStatus").textContent="Using fallback exchange rates";
    updateTotals();
  }
 }
