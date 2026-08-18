@@ -106,6 +106,91 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
   .top { align-items: start; flex-direction: column; } 
   .rate { text-align: left; } 
 }
+
+/* --- ADD THE PRINT CSS HERE --- */
+@media print {
+  /* Force browser to print exact dark background and color styling */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+  
+  #calculator, #calculator * {
+    visibility: visible;
+  }
+  
+  #calculator {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 20px;
+    background-color: var(--bg) !important;
+    color: #ffffff !important; /* Force all text white */
+  }
+
+  /* Hide UI clutter, buttons, extra columns */
+  nav, 
+  .toolbar button, 
+  #baseCurrency, 
+  #paymentCurrency, 
+  #addRow, 
+  #resetRows, 
+  #saveQuote, 
+  .cards:not(#topCardsGrid), 
+  .toolbar:has(#feeName), 
+  #feesBody,
+  table th:last-child, 
+  table td:last-child {
+    display: none !important;
+  }
+
+  /* Inputs look like clean plain white text */
+  input, select {
+    border: none !important;
+    background: transparent !important;
+    color: #ffffff !important;
+    padding: 0 !important;
+    font-size: 13px !important;
+  }
+
+  table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+  }
+  
+  th, td {
+    border-bottom: 1px solid #333 !important;
+    color: #ffffff !important;
+  }
+
+  /* --- HIGHLY VISIBLE PREVIEW WARNING BANNER --- */
+  #calculator::after {
+    content: "⚠️ NOTICE: First " attr(data-free-previews) " preview liveries are FREE. Any additional changes or requests beyond this limit will lead to paid previews!";
+    display: block;
+    margin-top: 30px;
+    padding: 15px;
+    background-color: #1a160d !important; /* Slight dark amber/yellow tint background */
+    border: 2px solid #fbbf24 !important; /* Bright warning border */
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: bold;
+    color: #fbbf24 !important; /* Bright gold/yellow text so it catches the eye instantly */
+    text-align: center;
+  }
+  /* Hide secondary exchange currency boxes and secondary columns during print */
+  .cards .card:nth-child(n+3), 
+  #cardWrap2, 
+  #cardWrap3, 
+  #cardWrap4 {
+    display: none !important;
+  }
+}
 </style>
 </head>
 <body>
@@ -149,7 +234,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
             </select>
           </label>
           <button id="saveQuote">Save to Order</button>
-          <button onclick="window.print()" style="background:var(--panel2); border-color:var(--border);">🖨️ Print Quote</button>
+          <button onclick="document.getElementById('calculator').setAttribute('data-free-previews', freePreviewsCount); window.print();" style="background:var(--panel2); border-color:var(--border);">🖨️ Print Quote</button>
           <button id="addRow">+ Add row</button>
           <button id="resetRows">Reset</button>
         </div>
@@ -157,7 +242,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
       <div class="table-wrap">
         <table>
           <thead><tr>
-            <th>Amount</th><th>Tag</th><th>Price / Unit</th><th>Additional Information</th><th>Delivery</th>
+            <th>Amount</th><th>Tag</th><th>Price / Unit</th><th>File Type</th><th>Delivery</th>
             <th id="thCol1">CAD</th><th id="thCol2">USD</th><th id="thCol3">EUR</th><th></th>
           </tr></thead>
           <tbody id="calcBody"></tbody>
@@ -195,9 +280,8 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
         <div class="card" style="border-color: var(--accent);"><div class="label">Fees Total</div><div class="value" id="feesTotalVal">0.00</div></div>
       </div>
       <div class="cards">
-        <div class="card"><div class="label">10% discount — Primary</div><div class="value" id="discUsd">$0.00</div></div>
-        <div class="card"><div class="label">10% discount — Secondary</div><div class="value" id="discEur">$0.00</div></div>
-        <div class="card"><div class="label">PayPal estimate (5% off)</div><div class="value" id="paypal">$0.00</div></div>
+        <div class="card"><div class="label">Primary discount — Primary</div><div class="value" id="discUsd">$0.00</div></div>
+        <div class="card"><div class="label">PayPal fee estimate (How much paypal gonna take from your invoice)</div><div class="value" id="paypal">$0.00</div></div>
         <div class="card" id="paymentCard"><div class="label">Payment requirement</div><div class="value" id="payment" style="font-size:17px">—</div></div>
       </div>
       <div id="quoteNotice" class="notice hidden"></div>
@@ -340,14 +424,46 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
         </div>
       </div>
 
-      <h2>Data Backup & Restore</h2>
-      <div class="info-box" style="max-width: 500px; margin-bottom: 20px;">
-        <p class="small" style="margin-top:0;">Export all your orders, calculator items, blacklist, schedule, and settings to a JSON backup file or restore them anytime.</p>
-        <div style="display:flex; gap:10px;">
-          <button onclick="exportAppData()" style="background:var(--accent); color:#07110d; border-color:var(--accent);">💾 Export Backup JSON</button>
-          <button onclick="document.getElementById('importFileBtn').click()" style="background:var(--panel2);">📂 Import Backup</button>
-          <input type="file" id="importFileBtn" accept=".json" class="hidden" onchange="importAppData(event)">
+<h2>File Type Rates (%)</h2>
+      <div class="info-box" style="max-width: 500px;">
+        <p class="small" style="margin-top:0;">Set the percentage increase for each file type (0 = no extra cost, 15 = +15%).</p>
+        <div style="margin-bottom: 12px;">
+          <label><b>Drag and Drop (%)</b></label>
+          <input type="number" id="settingRateRaw" step="1" style="margin-top: 5px;">
         </div>
+        <div style="margin-bottom: 12px;">
+          <label><b>Stand Alone (%)</b></label>
+          <input type="number" id="settingRateStandAlone" step="1" style="margin-top: 5px;">
+        </div>
+        <div style="margin-bottom: 15px;">
+          <label><b>Raw Files (%)</b></label>
+          <input type="number" id="settingRateDragDrop" step="1" style="margin-top: 5px;">
+        </div>
+        <button id="saveFileRates" style="background:var(--accent); color:#07110d; border-color:var(--accent);">Save File Rates</button>
+      </div>
+
+      <h2>Payment Threshold Settings</h2>
+      <div class="info-box" style="max-width: 500px;">
+        <p class="small" style="margin-top:0;">Configure the minimum quote values (in USD) required to trigger payment requirements.</p>
+        <div style="margin-bottom: 12px;">
+          <label><b>Pay Half Now Threshold Warrning</b> (Default: $100)</label>
+          <input type="number" id="settingHalfThreshold" step="1" style="margin-top: 5px;">
+        </div>
+        <div style="margin-bottom: 15px;">
+          <label><b>Pay Up Front Threshold Warrning</b> (Default: $200)</label>
+          <input type="number" id="settingUpfrontThreshold" step="1" style="margin-top: 5px;">
+        </div>
+        <button id="saveThresholds" style="background:var(--accent); color:#07110d; border-color:var(--accent);">Save Payment Thresholds</button>
+      </div>
+
+<h2>Free Preview Settings</h2>
+      <div class="info-box" style="max-width: 500px; margin-bottom: 20px;">
+        <p class="small" style="margin-top:0;">Set how many preview liveries are included for free.</p>
+        <div style="margin-bottom: 12px;">
+          <label><b>Free Preview Count</b></label>
+          <input type="number" id="settingFreePreviews" min="0" step="1" style="margin-top: 5px;">
+        </div>
+        <button id="saveFreePreviews" style="background:var(--accent); color:#07110d; border-color:var(--accent);">Save Free Previews</button>
       </div>
 
       <h2>Theme Settings</h2>
@@ -411,18 +527,14 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
         </div>
       </div>
 
-      <h2>Payment Threshold Settings</h2>
-      <div class="info-box" style="max-width: 500px;">
-        <p class="small" style="margin-top:0;">Configure the minimum quote values (in USD) required to trigger payment requirements.</p>
-        <div style="margin-bottom: 12px;">
-          <label><b>Pay Half Now Threshold</b> (Default: $100)</label>
-          <input type="number" id="settingHalfThreshold" step="1" style="margin-top: 5px;">
+            <h2>Data Backup & Restore</h2>
+      <div class="info-box" style="max-width: 500px; margin-bottom: 20px;">
+        <p class="small" style="margin-top:0;">Export all your orders, calculator items, blacklist, schedule, and settings to a JSON backup file or restore them anytime.</p>
+        <div style="display:flex; gap:10px;">
+          <button onclick="exportAppData()" style="background:var(--accent); color:#07110d; border-color:var(--accent);">💾 Export Backup JSON</button>
+          <button onclick="document.getElementById('importFileBtn').click()" style="background:var(--panel2);">📂 Import Backup</button>
+          <input type="file" id="importFileBtn" accept=".json" class="hidden" onchange="importAppData(event)">
         </div>
-        <div style="margin-bottom: 15px;">
-          <label><b>Pay Up Front Threshold</b> (Default: $200)</label>
-          <input type="number" id="settingUpfrontThreshold" step="1" style="margin-top: 5px;">
-        </div>
-        <button id="saveThresholds" style="background:var(--accent); color:#07110d; border-color:var(--accent);">Save Payment Thresholds</button>
       </div>
     </div>
   </section>
@@ -455,6 +567,27 @@ function closeTab(event, tabName) {
   }
   document.getElementById('restoreTabsBtn').classList.remove('hidden');
 }
+
+// --- File Type Rates Settings ---
+let rateRaw = Number(localStorage.getItem('liveryRateRaw')) || 0;
+let rateStandAlone = Number(localStorage.getItem('liveryRateStandAlone')) || 0;
+let rateDragDrop = Number(localStorage.getItem('liveryRateDragDrop')) || 0;
+
+document.getElementById('settingRateRaw').value = rateRaw;
+document.getElementById('settingRateStandAlone').value = rateStandAlone;
+document.getElementById('settingRateDragDrop').value = rateDragDrop;
+
+document.getElementById('saveFileRates').onclick = () => {
+  rateRaw = Number(document.getElementById('settingRateRaw').value) || 0;
+  rateStandAlone = Number(document.getElementById('settingRateStandAlone').value) || 0;
+  rateDragDrop = Number(document.getElementById('settingRateDragDrop').value) || 0;
+  localStorage.setItem('liveryRateRaw', rateRaw);
+  localStorage.setItem('liveryRateStandAlone', rateStandAlone);
+  localStorage.setItem('liveryRateDragDrop', rateDragDrop);
+  updateTotals();
+  render();
+  alert("File Type rates saved successfully!");
+};
 
 function restoreAllTabs() {
   document.querySelectorAll('.tab').forEach(btn => btn.style.display = '');
@@ -527,6 +660,16 @@ function calculateWorkScheduleTracker() {
     statusText.style.color = "var(--danger)";
   }
 }
+
+// --- Free Preview Settings ---
+let freePreviewsCount = Number(localStorage.getItem('liveryFreePreviews')) || 2; // Default to 2 free previews
+document.getElementById('settingFreePreviews').value = freePreviewsCount;
+
+document.getElementById('saveFreePreviews').onclick = () => {
+  freePreviewsCount = Number(document.getElementById('settingFreePreviews').value) || 0;
+  localStorage.setItem('liveryFreePreviews', freePreviewsCount);
+  alert("Free preview count saved successfully!");
+};
 
 // --- Backup & Restore Logic ---
 function exportAppData() {
@@ -895,6 +1038,38 @@ function calcRow(r){
   return a*p*mult;
 }
 
+function calcRow(r){
+  const a=Number(r.amount)||0, p=Number(r.price)||0;
+  const base = a * p;
+  
+  // Delivery Math
+  const delivBonus = r.delivery==="ASAP" ? 0.30 : r.delivery==="MID" ? 0.15 : 0;
+  
+  // File Type Math (defaults to 0 if rates aren't set yet)
+  let fileBonus = 0;
+  if (r.fileType === "Raw Files") fileBonus = (typeof rateRaw !== 'undefined' ? rateRaw : 0) / 100;
+  else if (r.fileType === "Stand Alone") fileBonus = (typeof rateStandAlone !== 'undefined' ? rateStandAlone : 0) / 100;
+  else if (r.fileType === "Drag and Drop") fileBonus = (typeof rateDragDrop !== 'undefined' ? rateDragDrop : 0) / 100;
+  
+  return base + (base * delivBonus) + (base * fileBonus);
+}
+
+function calcRow(r){
+  const a=Number(r.amount)||0, p=Number(r.price)||0;
+  const base = a * p;
+  
+  // Delivery Math
+  const delivBonus = r.delivery==="ASAP" ? 0.30 : r.delivery==="MID" ? 0.15 : 0;
+  
+  // File Type Math (defaults to 0 if rates aren't set yet)
+  let fileBonus = 0;
+  if (r.fileType === "Raw Files") fileBonus = (typeof rateRaw !== 'undefined' ? rateRaw : 0) / 100;
+  else if (r.fileType === "Stand Alone") fileBonus = (typeof rateStandAlone !== 'undefined' ? rateStandAlone : 0) / 100;
+  else if (r.fileType === "Drag and Drop") fileBonus = (typeof rateDragDrop !== 'undefined' ? rateDragDrop : 0) / 100;
+  
+  return base + (base * delivBonus) + (base * fileBonus);
+}
+
 function getRowTotalBase() {
   return rows.reduce((s,r) => s + calcRow(r), 0);
 }
@@ -1001,7 +1176,7 @@ if (isRedundant) {
       <td><input class="num" type="number" min="0" step="1" data-i="${i}" data-k="amount" value="${r.amount}"></td>
       <td><select data-i="${i}" data-k="tier"><option value=""></option><option ${r.tier==="ONX"?"selected":""}>ONX</option><option ${r.tier==="Seb5a"?"selected":""}>Seb5a</option><option ${r.tier==="Lorewave"?"selected":""}>Lorewave</option><option ${r.tier==="H-Vehicles"?"selected":""}>H-Vehicles</option><option ${r.tier==="VD Customs"?"selected":""}>VD Customs</option><option ${r.tier==="Custom"?"selected":""}>Custom</option></select></td>
       <td><input class="price" type="number" min="0" step="0.01" data-i="${i}" data-k="price" value="${r.price}"></td>
-      <td><input data-i="${i}" data-k="info" value="${r.info||""}"></td>
+      <td><select data-i="${i}" data-k="fileType"><option value=""></option><option ${r.fileType==="Raw Files"?"selected":""}>Raw Files</option><option ${r.fileType==="Stand Alone"?"selected":""}>Stand Alone</option><option ${r.fileType==="Drag and Drop"?"selected":""}>Drag and Drop</option></select></td>
       <td><select data-i="${i}" data-k="delivery"><option ${r.delivery==="NORM"?"selected":""}>NORM</option><option ${r.delivery==="MID"?"selected":""}>MID</option><option ${r.delivery==="ASAP"?"selected":""}>ASAP</option><option ${r.delivery==="Wait"?"selected":""}>Wait</option></select></td>
       <td style="display:${isRedundant?'none':''}">${money(valCol1, sym1)}</td><td style="display:${isRedundant?'none':''}">${money(valCol2, sym2)}</td><td style="display:${isRedundant?'none':''}">${money(valCol3, sym3)}</td>
       <td><button class="remove" onclick="removeRow(${i})">×</button></td>`;
@@ -1074,7 +1249,10 @@ function updateTotals(){
 
   if (document.getElementById("discUsd")) document.getElementById("discUsd").textContent = money(discCol1, sym1);
   if (document.getElementById("discEur")) document.getElementById("discEur").textContent = money(discCol2, sym2);
-  if (document.getElementById("paypal")) document.getElementById("paypal").textContent = money(totalCol1 * 0.95, sym1);
+  if (document.getElementById("paypal")) {
+    const paypalFee = totalCol1 * 0.095;
+    document.getElementById("paypal").textContent = money(paypalFee, sym1);
+  }
   
   const totalUSD = convertCurrency(totalBase, baseCurrency, 'USD');
   const paymentCard = document.getElementById("paymentCard");
@@ -1108,7 +1286,7 @@ function updateTotals(){
 }
 
 function removeRow(i){rows.splice(i,1);localStorage.setItem("liveryCalcRows",JSON.stringify(rows));render()}
-document.getElementById("addRow").onclick=()=>{rows.push({amount:"",tier:"",price:"",info:"",delivery:"NORM"});render()};
+document.getElementById("addRow").onclick=()=>{rows.push({amount:"",tier:"",price:"",fileType:"",delivery:"NORM"});render()};
 document.getElementById("resetRows").onclick=()=>{if(confirm("Reset calculator?")){rows=structuredClone(defaults);localStorage.removeItem("liveryCalcRows");render()}};
 
 document.getElementById('baseCurrency').onchange = (e) => {
@@ -1203,7 +1381,7 @@ function renderOrders(){
    <td><select data-i="${i}" data-k="status"><option ${o.status==="NORMAL"?"selected":""}>NORMAL</option><option ${o.status==="Cancel"?"selected":""}>Cancel</option><option ${o.status==="MID"?"selected":""}>MID</option><option ${o.status==="ASAP"?"selected":""}>ASAP</option></select></td>
    <td><input type="date" value="${o.placement||""}" data-i="${i}" data-k="placement"></td>
    <td><input type="date" value="${o.delivery||""}" data-i="${i}" data-k="delivery"></td>
-   <td><input type="checkbox" ${o.delivered?"checked":""} data-i="${i}" data-k="delivered" title="Check to mark as Delivered"></td>
+   <td style="text-align: center;"><input type="checkbox" ${o.delivered ? "checked" : ""} data-i="${i}" data-k="delivered"></td>
    <td><button class="remove" onclick="removeOrder(${i})">×</button></td>`;
    b.appendChild(tr)
  });
