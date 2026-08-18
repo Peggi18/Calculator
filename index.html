@@ -157,7 +157,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
       <div class="table-wrap">
         <table>
           <thead><tr>
-            <th>Amount</th><th>Tier</th><th>Price / Unit</th><th>Additional Information</th><th>Delivery</th>
+            <th>Amount</th><th>Tag</th><th>Price / Unit</th><th>Additional Information</th><th>Delivery</th>
             <th id="thCol1">CAD</th><th id="thCol2">USD</th><th id="thCol3">EUR</th><th></th>
           </tr></thead>
           <tbody id="calcBody"></tbody>
@@ -187,10 +187,11 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
         </table>
       </div>
 
-      <div class="cards" style="grid-template-columns: repeat(4, 1fr);" id="topCardsGrid">
+      <div class="cards" style="grid-template-columns: repeat(5, 1fr);" id="topCardsGrid">
         <div class="card" id="cardWrap1"><div class="label" id="cardLbl1">CAD total</div><div class="value" id="usdTotal">$0.00</div></div>
         <div class="card" id="cardWrap2"><div class="label" id="cardLbl2">USD total</div><div class="value" id="eurTotal">$0.00</div></div>
         <div class="card" id="cardWrap3"><div class="label" id="cardLbl3">EUR total</div><div class="value" id="plnUsd">€0.00</div></div>
+        <div class="card" id="cardWrap4"><div class="label" id="cardLbl4">PLN total</div><div class="value" id="plnEur">zł0.00</div></div>
         <div class="card" style="border-color: var(--accent);"><div class="label">Fees Total</div><div class="value" id="feesTotalVal">0.00</div></div>
       </div>
       <div class="cards">
@@ -869,13 +870,13 @@ document.getElementById('baseCurrency').value = baseCurrency;
 
 // --- Calculator & Fees Logic ---
 const defaults=[
-  {amount:10,tier:"",price:8,info:"",delivery:"ASAP"},
+{amount:10,tier:"",price:8,info:"",delivery:"ASAP"},
   {amount:"",tier:"",price:"",info:"",delivery:"NORM"},
   {amount:"",tier:"",price:"",info:"",delivery:"NORM"},
   {amount:"",tier:"",price:"",info:"",delivery:"NORM"},
-  {amount:"",tier:"Low Tier",price:"",info:"",delivery:"NORM"},
-  {amount:"",tier:"High Tier",price:"",info:"",delivery:"NORM"},
-  {amount:"",tier:"Low Tier",price:"",info:"",delivery:"NORM"},
+  {amount:"",tier:"",price:"",info:"",delivery:"NORM"},
+  {amount:"",tier:"",price:"",info:"",delivery:"NORM"},
+  {amount:"",tier:"",price:"",info:"",delivery:"NORM"},
   {amount:"",tier:"",price:"",info:"",delivery:"NORM"},
   {amount:"",tier:"",price:"",info:"",delivery:"NORM"},
   {amount:"",tier:"",price:"",info:"",delivery:"NORM"},
@@ -948,13 +949,14 @@ function render(){
   const cardWrap4 = document.getElementById("cardWrap4");
   const topCardsGrid = document.getElementById("topCardsGrid");
 
-  if (isRedundant) {
+if (isRedundant) {
     if (thCol1) thCol1.style.display = "none";
     if (thCol2) thCol2.style.display = "none";
     if (thCol3) thCol3.style.display = "none";
-    if (cardWrap1) cardWrap1.style.display = "none";
+    if (cardWrap1) cardWrap1.style.display = ""; // KEEP VISIBLE: This is your primary total
     if (cardWrap2) cardWrap2.style.display = "none";
     if (cardWrap3) cardWrap3.style.display = "none";
+    if (cardWrap4) cardWrap4.style.display = "none"; // Keep the UI clean by hiding PLN too
     if (topCardsGrid) topCardsGrid.style.gridTemplateColumns = "repeat(2, 1fr)";
   } else {
     if (thCol1) thCol1.style.display = "";
@@ -963,6 +965,7 @@ function render(){
     if (cardWrap1) cardWrap1.style.display = "";
     if (cardWrap2) cardWrap2.style.display = "";
     if (cardWrap3) cardWrap3.style.display = "";
+    if (cardWrap4) cardWrap4.style.display = ""; // Restore PLN total
     if (topCardsGrid) topCardsGrid.style.gridTemplateColumns = "repeat(5, 1fr)";
   }
 
@@ -996,7 +999,7 @@ function render(){
     const tr=document.createElement("tr");
     tr.innerHTML=`
       <td><input class="num" type="number" min="0" step="1" data-i="${i}" data-k="amount" value="${r.amount}"></td>
-      <td><select data-i="${i}" data-k="tier"><option value=""></option><option ${r.tier==="Low Tier"?"selected":""}>Low Tier</option><option ${r.tier==="Mid Tier"?"selected":""}>Mid Tier</option><option ${r.tier==="High Tier"?"selected":""}>High Tier</option></select></td>
+      <td><select data-i="${i}" data-k="tier"><option value=""></option><option ${r.tier==="ONX"?"selected":""}>ONX</option><option ${r.tier==="Seb5a"?"selected":""}>Seb5a</option><option ${r.tier==="Lorewave"?"selected":""}>Lorewave</option><option ${r.tier==="H-Vehicles"?"selected":""}>H-Vehicles</option><option ${r.tier==="VD Customs"?"selected":""}>VD Customs</option><option ${r.tier==="Custom"?"selected":""}>Custom</option></select></td>
       <td><input class="price" type="number" min="0" step="0.01" data-i="${i}" data-k="price" value="${r.price}"></td>
       <td><input data-i="${i}" data-k="info" value="${r.info||""}"></td>
       <td><select data-i="${i}" data-k="delivery"><option ${r.delivery==="NORM"?"selected":""}>NORM</option><option ${r.delivery==="MID"?"selected":""}>MID</option><option ${r.delivery==="ASAP"?"selected":""}>ASAP</option><option ${r.delivery==="Wait"?"selected":""}>Wait</option></select></td>
@@ -1117,9 +1120,6 @@ document.getElementById('baseCurrency').onchange = (e) => {
 
 // --- Orders Logic ---
 const defaultOrders=[
- {customerName:"t1zm",discordId:"147834181819432960",name:"Fleet Package",description:"",tags:["LSPD","BCSO","LSSD"],tagAttachments:{LSPD:[],BCSO:[],LSSD:[]},total:0,currency:"USD",amount:"34x10 | 1071",status:"Cancel",placement:"",delivery:"",delivered:false},
- {customerName:"nirwos",discordId:"596273129500835852",name:"Standard",description:"",tags:["LSPD"],tagAttachments:{LSPD:[]},total:0,currency:"USD",amount:"20x8 | 184",status:"Cancel",placement:"",delivery:"",delivered:false},
- {customerName:"ziemson",discordId:"123456789012345678",name:"Fire Dept",description:"",tags:["FIRE","EMT"],tagAttachments:{FIRE:[],EMT:[]},total:0,currency:"USD",amount:"14x3+4 | 46",status:"NORMAL",placement:"",delivery:"",delivered:false}
 ];
 let orders=JSON.parse(localStorage.getItem("liveryOrders")||"null")||defaultOrders;
 orders.forEach(o => {
@@ -1313,8 +1313,6 @@ document.getElementById("confirmQuote").onclick=()=>{
 
 // --- Blacklist Logic ---
 let blacklist=[
- {name:"flawws",discord:"147834181819432960",date:"2025-07-24",reason:"Ghost Order",cost:700},
- {name:"b44tzib4erm4x",discord:"596273129500835852",date:"2025-04-02",reason:"Ghost Order",cost:100}
 ];
 function renderBlacklist(){
  const b=document.getElementById("blackBody");b.innerHTML="";
