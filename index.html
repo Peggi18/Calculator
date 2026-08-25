@@ -133,7 +133,22 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
     background-color: var(--bg) !important;
     color: #ffffff !important; /* Force all text white */
   }
-
+  
+  /* --- HIGHLY VISIBLE PREVIEW WARNING BANNER --- */
+  #calculator::after {
+    content: "⚠️ NOTICE: First " attr(data-free-previews) " preview liveries are FREE. Any additional changes or requests beyond this limit will lead to paid previews!";
+    display: block;
+    margin-top: 30px;
+    padding: 15px;
+    background-color: #1a160d !important; /* Slight dark amber/yellow tint background */
+    border: 2px solid #fbbf24 !important; /* Bright warning border */
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: bold;
+    color: #fbbf24 !important; /* Bright gold/yellow text so it catches the eye instantly */
+    text-align: center;
+  }
+  
   /* Hide UI clutter, buttons, extra columns */
   nav, 
   .toolbar button, 
