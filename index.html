@@ -134,22 +134,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
     background-color: var(--bg) !important;
     color: #ffffff !important; /* Force all text white */
   }
-  
-  /* --- HIGHLY VISIBLE PREVIEW WARNING BANNER --- */
-  #calculator::after {
-    content: "⚠️ NOTICE: First " attr(data-free-previews) " preview liveries are FREE. Any additional changes or requests beyond this limit will lead to paid previews!";
-    display: block;
-    margin-top: 30px;
-    padding: 15px;
-    background-color: #1a160d !important; /* Slight dark amber/yellow tint background */
-    border: 2px solid #fbbf24 !important; /* Bright warning border */
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: bold;
-    color: #fbbf24 !important; /* Bright gold/yellow text so it catches the eye instantly */
-    text-align: center;
-  }
-  
+
   /* Hide UI clutter, buttons, extra columns */
   nav, 
   .toolbar button, 
@@ -185,6 +170,21 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
     color: #ffffff !important;
   }
 
+/* --- LEGENDA DLA WYDRUKU: TYPY PLIKÓW & CZAS DOSTAWY --- */
+  #calculator::before {
+    content: "FILE TYPES EXPLANATION:\A• Raw Files: full open to edit and view\A• Stand Alone: locked liveries without any other files\A• Drag and Drop: locked files ready to use\A\A DELIVERY TIMES:\A• ASAP: 3-5 days\A• MID: 5-7 days\A• Normal / NORM: 7-14 days";
+    white-space: pre-wrap; /* Pozwala na używanie przełamań linii (\A) */
+    display: block;
+    margin-bottom: 20px;
+    padding: 12px 16px;
+    background-color: #12161b !important;
+    border: 1px solid #29313a !important;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #ffffff !important;
+    line-height: 1.5;
+  }
+  
   /* --- HIGHLY VISIBLE PREVIEW WARNING BANNER --- */
   #calculator::after {
     content: "⚠️ NOTICE: First " attr(data-free-previews) " preview liveries are FREE. Any additional changes or requests beyond this limit will lead to paid previews!";
@@ -199,6 +199,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
     color: #fbbf24 !important; /* Bright gold/yellow text so it catches the eye instantly */
     text-align: center;
   }
+  
   /* Hide secondary exchange currency boxes and secondary columns during print */
   .cards .card:nth-child(n+3), 
   #cardWrap2, 
