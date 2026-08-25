@@ -1047,9 +1047,9 @@ function calcRow(r){
   
   // File Type Math (defaults to 0 if rates aren't set yet)
   let fileBonus = 0;
-  if (r.fileType === "Raw Files") fileBonus = (typeof rateRaw !== 'undefined' ? rateRaw : 0) / 100;
+  if (r.fileType === "Drag and Drop") fileBonus = (typeof rateRaw !== 'undefined' ? rateRaw : 0) / 100;
   else if (r.fileType === "Stand Alone") fileBonus = (typeof rateStandAlone !== 'undefined' ? rateStandAlone : 0) / 100;
-  else if (r.fileType === "Drag and Drop") fileBonus = (typeof rateDragDrop !== 'undefined' ? rateDragDrop : 0) / 100;
+  else if (r.fileType === "Raw Files") fileBonus = (typeof rateDragDrop !== 'undefined' ? rateDragDrop : 0) / 100;
   
   return base + (base * delivBonus) + (base * fileBonus);
 }
@@ -1063,9 +1063,9 @@ function calcRow(r){
   
   // File Type Math (defaults to 0 if rates aren't set yet)
   let fileBonus = 0;
-  if (r.fileType === "Raw Files") fileBonus = (typeof rateRaw !== 'undefined' ? rateRaw : 0) / 100;
+  if (r.fileType === "Drag and Drop") fileBonus = (typeof rateRaw !== 'undefined' ? rateRaw : 0) / 100;
   else if (r.fileType === "Stand Alone") fileBonus = (typeof rateStandAlone !== 'undefined' ? rateStandAlone : 0) / 100;
-  else if (r.fileType === "Drag and Drop") fileBonus = (typeof rateDragDrop !== 'undefined' ? rateDragDrop : 0) / 100;
+  else if (r.fileType === "Raw Files") fileBonus = (typeof rateDragDrop !== 'undefined' ? rateDragDrop : 0) / 100;
   
   return base + (base * delivBonus) + (base * fileBonus);
 }
